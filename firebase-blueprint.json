@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Forge Project",
+      "description": "A Void Metal video project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "lastModified": { "type": "string", "format": "date-time" },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["video", "audio", "text"] },
+              "clips": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "file": { "type": "string" },
+                    "text": { "type": "string" },
+                    "style": { "type": "string" },
+                    "volume": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["id", "name", "ownerId", "tracks"]
+    },
+    "User": {
+      "title": "Forger",
+      "description": "A user of the Void Forge",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "forger"] },
+        "lastSeen": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "role"]
+    },
+    "Stamp": {
+      "title": "Philatelic Stamp",
+      "description": "A physical stamp asset being audited and recovered",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "country": { "type": "string" },
+        "year": { "type": "number" },
+        "color": { "type": "string" },
+        "shape": { "type": "string" },
+        "historicalProvenance": { "type": "string" },
+        "marketVelocity": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "EXTREME"] },
+        "estimatedValue": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["AUDITED", "STOLEN", "RECOVERED"] },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "name", "country", "year", "color", "shape", "historicalProvenance", "marketVelocity", "estimatedValue", "status", "ownerId"]
+    },
+    "Telemetry": {
+      "title": "Sentry Telemetry",
+      "description": "Cloud performance and job tracking telemetry",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "state": { "type": "string" },
+        "batchSize": { "type": "number" },
+        "resourceExhaustedCount": { "type": "number" },
+        "cloudShellConnected": { "type": "boolean" },
+        "timestamp": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["jobId", "state", "batchSize", "resourceExhaustedCount", "cloudShellConnected", "timestamp", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Storage for video projects"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    },
+    "/stamps/{stampId}": {
+      "schema": "Stamp",
+      "description": "Storage for audited stamp physical assets"
+    },
+    "/telemetry/{telemetryId}": {
+      "schema": "Telemetry",
+      "description": "Storage for active cloud custom-jobs and resource monitoring states"
+    }
+  }
+}

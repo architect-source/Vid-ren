@@ -1,0 +1,8 @@
+{
+  "name": "Remix: VOID FORGE PRO V1.0",
+  "description": "The Azrael Update // Sovereign Sentry // Cinematic Video \u0026 Audio Synthesis Suite. Outshining the mundane with brutal AI generation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

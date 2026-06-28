@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-void-black: #050505;
+  --color-void-gray: #1a1a1a;
+  --color-void-steel: #333333;
+  --color-void-blood: #8b0000;
+  --color-void-rust: #4a3728;
+  --color-void-cyan: #00ffff;
+
+  /* 80s Expansion Palette */
+  --color-neon-pink: #FF00FF;
+  --color-retro-purple: #32004b;
+  --color-sentry-cyan: #00FFFF;
+  --color-sentry-dark-cyan: #008B8B;
+  --color-vault-gray: #1A1C1E;
+  --color-blood-red: #8B0000;
+}
+
+@layer base {
+  body {
+    @apply bg-void-black text-gray-300 font-sans selection:bg-void-blood selection:text-white;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-black tracking-tighter uppercase;
+  }
+}
+
+.glitch-text {
+  text-shadow: 2px 0 #ff0000, -2px 0 #00ff00;
+  animation: glitch 2s infinite linear alternate-reverse;
+}
+
+@keyframes glitch {
+  0% { text-shadow: 2px 0 #ff0000, -2px 0 #00ff00; }
+  50% { text-shadow: -2px 0 #ff0000, 2px 0 #00ff00; }
+  100% { text-shadow: 2px 0 #ff0000, -2px 0 #00ff00; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
+}
+
+.animate-scanline {
+  animation: scanline 8s linear infinite;
+}
+
+.metal-border {
+  border: 1px solid theme('colors.void-steel');
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+.forge-glow {
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.2);
+}
+
+.sentry-glow {
+  box-shadow: 0 0 20px var(--color-sentry-cyan);
+  text-shadow: 0 0 10px var(--color-sentry-cyan);
+}
+
+.button-forge {
+  background: var(--color-blood-red);
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  transition: all 0.3s ease;
+}
+
+.button-forge-red {
+  background: var(--color-blood-red);
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  transition: all 0.3s ease;
+  @apply hover:bg-red-700 hover:scale-105 active:scale-95;
+}

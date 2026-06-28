@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - User's unique ID
+    //   - role: string (required, 'admin'|'forger') - User's role
+    //   - lastSeen: string (optional, ISO 8601) - Last activity timestamp
+    //
+    // Collection: projects
+    // Document ID: {projectId}
+    // Fields:
+    //   - id: string (required) - Project ID
+    //   - name: string (required) - Project name
+    //   - ownerId: string (required) - Owner's UID
+    //   - lastModified: string (required, ISO 8601) - Last modified timestamp
+    //   - tracks: array (required) - List of video/audio/text tracks
+    //
+    // Collection: stamps
+    // Document ID: {stampId}
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - country: string (required)
+    //   - year: number (required)
+    //   - color: string (required)
+    //   - shape: string (required)
+    //   - historicalProvenance: string (required)
+    //   - marketVelocity: string (required, LOW|MEDIUM|HIGH|EXTREME)
+    //   - estimatedValue: number (required)
+    //   - imageUrl: string (optional)
+    //   - status: string (required, AUDITED|STOLEN|RECOVERED)
+    //   - ownerId: string (required)
+    //
+    // Collection: telemetry
+    // Document ID: {telemetryId}
+    // Fields:
+    //   - jobId: string (required)
+    //   - state: string (required)
+    //   - batchSize: number (required)
+    //   - resourceExhaustedCount: number (required)
+    //   - cloudShellConnected: bool (required)
+    //   - timestamp: number (required)
+    //   - ownerId: string (required)
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isProjectOwner(projectData) {
+      return isAuthenticated() && request.auth.uid == projectData.ownerId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "architect@azrael-core.com" && request.auth.token.email_verified == true)
+        );
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.role in ['admin', 'forger'];
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['project_name', 'ownerId', 'tracks']) &&
+             data.project_name is string && data.project_name.size() > 0 &&
+             data.ownerId == request.auth.uid &&
+             data.tracks is list;
+    }
+
+    function isValidStamp(data) {
+      return data.keys().hasAll(['id', 'name', 'country', 'year', 'color', 'shape', 'historicalProvenance', 'marketVelocity', 'estimatedValue', 'status', 'ownerId']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.country is string && data.country.size() <= 100 &&
+             data.year is number &&
+             data.color is string && data.color.size() <= 100 &&
+             data.shape is string && data.shape.size() <= 100 &&
+             data.historicalProvenance is string && data.historicalProvenance.size() <= 2000 &&
+             data.marketVelocity in ['LOW', 'MEDIUM', 'HIGH', 'EXTREME'] &&
+             data.estimatedValue is number &&
+             data.status in ['AUDITED', 'STOLEN', 'RECOVERED'] &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidTelemetry(data) {
+      return data.keys().hasAll(['jobId', 'state', 'batchSize', 'resourceExhaustedCount', 'cloudShellConnected', 'timestamp', 'ownerId']) &&
+             data.jobId is string && data.jobId.size() <= 128 &&
+             data.state is string && data.state.size() <= 100 &&
+             data.batchSize is number &&
+             data.resourceExhaustedCount is number &&
+             data.cloudShellConnected is bool &&
+             data.timestamp is number &&
+             data.ownerId == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin()) && 
+                    request.resource.data.role == resource.data.role; // Cannot self-promote
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated(); // Forgers can collaborate
+      allow create: if isAuthenticated() && isValidProject(request.resource.data);
+      allow update: if isAuthenticated() && isValidProject(request.resource.data) && 
+                    (isProjectOwner(resource.data) || isAdmin());
+      allow delete: if isAuthenticated() && (isProjectOwner(resource.data) || isAdmin());
+    }
+
+    match /stamps/{stampId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidStamp(request.resource.data);
+      allow update: if isAuthenticated() && isValidStamp(request.resource.data) && 
+                    (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /telemetry/{telemetryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTelemetry(request.resource.data);
+      allow update: if isAuthenticated() && isValidTelemetry(request.resource.data) && 
+                    (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /test/{docId} {
+      allow read: if isAuthenticated();
+    }
+  }
+}
